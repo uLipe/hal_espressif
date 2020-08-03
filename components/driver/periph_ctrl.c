@@ -11,40 +11,41 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#include <zephyr.h>
 #include "freertos/FreeRTOS.h"
 #include "hal/clk_gate_ll.h"
 #include "driver/periph_ctrl.h"
 
-static portMUX_TYPE periph_spinlock = portMUX_INITIALIZER_UNLOCKED;
+static unsigned int periph_spinlock;
 
 static uint8_t ref_counts[PERIPH_MODULE_MAX] = {0};
 
 void periph_module_enable(periph_module_t periph)
 {
     assert(periph < PERIPH_MODULE_MAX);
-    portENTER_CRITICAL_SAFE(&periph_spinlock);
+    periph_spinlock = irq_lock();
     if (ref_counts[periph] == 0) {
         periph_ll_enable_clk_clear_rst(periph);
     }
     ref_counts[periph]++;
-    portEXIT_CRITICAL_SAFE(&periph_spinlock);
+    irq_unlock(periph_spinlock);
 }
 
 void periph_module_disable(periph_module_t periph)
 {
     assert(periph < PERIPH_MODULE_MAX);
-    portENTER_CRITICAL_SAFE(&periph_spinlock);
+    periph_spinlock = irq_lock();
     ref_counts[periph]--;
     if (ref_counts[periph] == 0) {
         periph_ll_disable_clk_set_rst(periph);
     }
-    portEXIT_CRITICAL_SAFE(&periph_spinlock);
+    irq_unlock(periph_spinlock);
 }
 
 void periph_module_reset(periph_module_t periph)
 {
     assert(periph < PERIPH_MODULE_MAX);
-    portENTER_CRITICAL_SAFE(&periph_spinlock);
+    periph_spinlock = irq_lock();
     periph_ll_reset(periph);
-    portEXIT_CRITICAL_SAFE(&periph_spinlock);
+    irq_unlock(periph_spinlock);
 }
