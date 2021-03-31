@@ -1,11 +1,19 @@
 [submodule "components/esptool_py/esptool"]
+	branch = 4fa0bd7b0d1f69f5ff22b043adc07c5e562a8931
 	path = components/esptool_py/esptool
 	url = https://github.com/espressif/esptool.git
 
 [submodule "components/bootloader/subproject/components/micro-ecc/micro-ecc"]
+	branch = d037ec89546fad14b5c4d5456c2e23a71e554966
 	path = components/bootloader/subproject/components/micro-ecc/micro-ecc
 	url = https://github.com/kmackay/micro-ecc.git
 
 [submodule "components/esp_wifi/lib"]
+	branch = 8075af81e896da21dfdb25fed98ff5c96b899ed4
 	path = components/esp_wifi/lib
 	url = https://github.com/espressif/esp32-wifi-lib.git
+
+[submodule "components/bt/controller/lib"]
+	branch = 8451fa0ed40882ca8e71335daee958c6de0341b3
+	path = components/bt/controller/lib
+	url = https://github.com/espressif/esp32-bt-lib.git
