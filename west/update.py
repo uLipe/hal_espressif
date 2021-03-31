@@ -6,6 +6,7 @@
 
 Espressif west extension to retrieve esp-idf submodules.'''
 
+import configparser
 import os
 import platform
 import subprocess
@@ -16,6 +17,7 @@ from west.commands import WestCommand
 from west import log
 
 ESP_IDF_REMOTE = "https://github.com/zephyrproject-rtos/hal_espressif"
+ZEPHYR_SUBMODULES = ".gitmodules"
 
 
 def cmd_check(cmd, cwd=None, stderr=subprocess.STDOUT):
@@ -70,24 +72,30 @@ class UpdateTool(WestCommand):
     def update(self, module_path):
         log.banner('updating ESP-IDF submodules..')
 
-        # look for origin remote
-        remote_name = cmd_check(("git", "remote"),
-                                cwd=module_path).decode('utf-8')
+        os.chdir(module_path)
+        cfg = configparser.ConfigParser()
+        cfg.read(ZEPHYR_SUBMODULES)
 
-        if "origin" not in remote_name:
-            # add origin url
-            cmd_exec(("git", "remote", "add", "origin",
-                     ESP_IDF_REMOTE), cwd=module_path)
-        else:
-            remote_url = cmd_check(("git", "remote", "get-url", "origin"),
-                                   cwd=module_path).decode('utf-8')
-            # update origin URL
-            if ESP_IDF_REMOTE not in remote_url:
-                cmd_exec(("git", "remote", "set-url", "origin",
-                         ESP_IDF_REMOTE), cwd=module_path)
+        for k in cfg.sections():
+            if not cfg.has_option(k, 'path') or not cfg.has_option(k, 'url'):
+                continue
 
-        cmd_exec(("git", "submodule", "update", "--init", "--recursive"),
-                 cwd=module_path)
+            path = cfg[k]['path']
+            url = cfg[k]['url']
+            
+            branch = "master"
+            if cfg.has_option(k, 'branch'):
+                branch = cfg[k]['branch']
+
+            if os.path.isdir(path):
+                print('Updating', path)
+                cmd_check(("git", "-C", path, "reset", "--hard"), cwd=module_path)
+                cmd_check(("git", "-C", path, "pull", "origin", branch), cwd=module_path)
+                cmd_check(("git", "-C", path, "checkout", branch), cwd=module_path)
+            else:
+                print('Cloning into', path)
+                cmd_check(("git", "clone", url, path), cwd=module_path)
+                cmd_check(("git", "-C", path, "checkout", branch), cwd=module_path)
 
         log.banner('updating ESP-IDF submodules completed')
 
